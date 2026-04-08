@@ -1,4 +1,4 @@
-name: CI OrangeHRM
+name: 🧪 CI OrangeHRM - Reportes
 
 on:
   push:
@@ -11,14 +11,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout código
+      - name: 📥 Checkout código
         uses: actions/checkout@v4
 
-      - name: Configurar Java
+      - name: ☕ Configurar Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Ejecutar pruebas
+      - name: 📦 Cache Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: maven-
+
+      - name: 🧪 Ejecutar pruebas
         run: mvn clean verify
+
+      - name: 📊 Generar reporte Serenity
+        run: mvn serenity:aggregate
+
+      - name: 📁 Subir reporte como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-serenity
+          path: target/site/serenity/
