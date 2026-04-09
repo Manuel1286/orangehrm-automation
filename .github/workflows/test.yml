@@ -43,7 +43,6 @@ jobs:
 
       # 🧪 Ejecutar pruebas
       - name: 🧪 Ejecutar pruebas Serenity
-        id: tests
         run: |
           mvn clean verify || echo "TESTS_FAILED=true" >> $GITHUB_ENV
 
@@ -66,10 +65,36 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: screenshots
-          path: target/site/serenity/*.png
+          path: target/site/serenity/
 
-      # 🔥 ENVIAR LOGS A GRAFANA (CORREGIDO)
-      - name: 📡 Enviar logs a Grafana Loki
+      # 🧪 TEST DE CONEXIÓN A GRAFANA (DEBUG)
+      - name: 🧪 Test conexión Grafana
+        if: always()
+        env:
+          GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
+        run: |
+          echo "Probando conexión a Grafana..."
+
+          TIMESTAMP=$(date +%s%N)
+
+          curl -v -X POST "https://logs-prod-us-east-3.grafana.net/loki/api/v1/push" \
+          -H "Authorization: Basic $GRAFANA_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"streams\": [
+              {
+                \"stream\": {
+                  \"job\": \"test-manual\"
+                },
+                \"values\": [
+                  [ \"$TIMESTAMP\", \"mensaje de prueba desde github actions\" ]
+                ]
+              }
+            ]
+          }"
+
+      # 📡 Enviar logs reales
+      - name: 📡 Enviar logs a Grafana
         if: always()
         env:
           GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
