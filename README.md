@@ -31,3 +31,4 @@ Ejecuta en tu terminal:
 
 ```bash
 mvn clean verify
+mvn serenity:aggregate
