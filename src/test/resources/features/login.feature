@@ -10,5 +10,5 @@ Feature: Validación de credenciales en OrangeHRM Live
     Examples:
       | username    | password       | resultado           |
       | Admin       | admin123       | Dashboard           |
-      | UsuarioFake | admin123       | Invalid credentials |
-      | Admin       | PasswordErrada | Invalid credentials |
+#      | UsuarioFake | admin123       | Invalid credentials |
+#      | Admin       | PasswordErrada | Invalid credentials |

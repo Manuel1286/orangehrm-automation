@@ -1,4 +1,4 @@
-package com.orangehrmlive.ui;
+package com.orangehrmlive.UI;
 
 import net.serenitybdd.screenplay.targets.Target;
 

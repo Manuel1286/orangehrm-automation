@@ -1,4 +1,4 @@
-package com.orangehrmlive.tasks;
+package com.orangehrmlive.Task;
 
 import net.serenitybdd.screenplay.Actor;
 import net.serenitybdd.screenplay.Task;
@@ -7,10 +7,12 @@ import net.serenitybdd.screenplay.actions.Enter;
 
 import net.serenitybdd.screenplay.waits.WaitUntil;
 
-import static com.orangehrmlive.ui.LoginUI.*;
+import static com.orangehrmlive.UI.LoginUI.*;
 import static net.serenitybdd.screenplay.Tasks.instrumented;
 import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isClickable;
 import static net.serenitybdd.screenplay.matchers.WebElementStateMatchers.isVisible;
+
+
 
 public class Login implements Task {
 
@@ -38,8 +40,4 @@ public class Login implements Task {
                 Click.on(BOTON_INGRESAR)
         );
     }
-
-
-
-
 }

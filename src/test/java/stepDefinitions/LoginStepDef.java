@@ -1,19 +1,17 @@
 package stepDefinitions;
 
-import com.orangehrmlive.tasks.Login;
-import com.orangehrmlive.tasks.UrlTask;
-import com.orangehrmlive.ui.LoginUI;
-import com.orangehrmlive.ui.DashboardUI;
+import com.orangehrmlive.Task.Login;
+import com.orangehrmlive.Task.UrlTask;
+import com.orangehrmlive.UI.LoginUI;
+import com.orangehrmlive.UI.DashboardUI;
 import io.cucumber.java.Before;
+import io.cucumber.java.BeforeAll;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import net.serenitybdd.screenplay.actors.OnlineCast;
 import net.serenitybdd.screenplay.questions.Text;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 
@@ -31,29 +29,18 @@ public class LoginStepDef {
         WebDriverManager.chromedriver().clearDriverCache().setup();
     }
 
-    @BeforeEach
-    void setupTest() {
-        driver = new ChromeDriver();
-    }
-
-    @AfterEach
-    void teardown() {
-        driver.quit();
-    }
 
     @Before
     public void setUp() {
         WebDriverManager.chromedriver().clearDriverCache().setup();
         setTheStage(new OnlineCast());
     }
-
     @Given("que el usuario se encuentra en la página de login de OrangeHRM Live")
     public void queElUsuarioSeEncuentraEnLaPáginaDeLoginDeOrangeHRMLive() {
         theActorCalled("Ingresar a la URL de orangehrmlive").wasAbleTo(
                 UrlTask.urlTask()
         );
     }
-
     @When("ingresa el username {string} y la password {string}")
     public void ingresaElUsernameYLaPassword(String username, String password) {
         System.out.println("USERNAME: " + username);

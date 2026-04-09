@@ -1,4 +1,4 @@
-package com.orangehrmlive.tasks;
+package com.orangehrmlive.Task;
 
 
 import net.serenitybdd.screenplay.Actor;
