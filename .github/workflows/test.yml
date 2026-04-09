@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # 📥 Checkout
       - name: 📥 Checkout código
         uses: actions/checkout@v4
@@ -31,35 +32,46 @@ jobs:
           key: maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-
 
-      # 🌐 Instalar Chrome
+      # 🌐 Chrome
       - name: 🌐 Instalar Google Chrome
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
 
-      # 🔍 Verificar Chrome
+      # 🔍 Chrome version
       - name: 🔍 Verificar Chrome
         run: google-chrome --version
 
-      # 🧪 Ejecutar pruebas
+      # 🧪 TESTS SERENITY
       - name: 🧪 Ejecutar pruebas Serenity
+        id: tests
         run: |
-          mvn clean verify || echo "TESTS_FAILED=true" >> $GITHUB_ENV
+          set +e
+          mvn clean verify
+          EXIT_CODE=$?
+          
+          if [ $EXIT_CODE -ne 0 ]; then
+            echo "TESTS_FAILED=true" >> $GITHUB_ENV
+          else
+            echo "TESTS_FAILED=false" >> $GITHUB_ENV
+          fi
 
-      # 📊 Generar reporte Serenity
+          exit $EXIT_CODE
+
+      # 📊 Reporte Serenity
       - name: 📊 Generar reporte Serenity
         if: always()
         run: mvn serenity:aggregate
 
-      # 📁 Subir reporte
-      - name: 📁 Subir reporte como artefacto
+      # 📁 Reporte
+      - name: 📁 Subir reporte Serenity
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: reporte-serenity
+          name: serenity-report
           path: target/site/serenity/
 
-      # 📸 Subir screenshots
+      # 📸 Screenshots
       - name: 📸 Subir screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,57 +79,29 @@ jobs:
           name: screenshots
           path: target/site/serenity/
 
-      # 🧪 TEST DE CONEXIÓN A GRAFANA (DEBUG)
+      # 🧪 TEST GRAFANA (VALIDACIÓN SEGURA)
       - name: 🧪 Test conexión Grafana
         if: always()
         env:
+          GRAFANA_URL: ${{ secrets.GRAFANA_URL }}
           GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
         run: |
           echo "Probando conexión a Grafana..."
 
           TIMESTAMP=$(date +%s%N)
 
-          curl -v -X POST "https://logs-prod-us-east-3.grafana.net/loki/api/v1/push" \
+          curl -v -X POST "$GRAFANA_URL" \
           -H "Authorization: Basic $GRAFANA_TOKEN" \
           -H "Content-Type: application/json" \
-          -d "{
-            \"streams\": [
+          -d '{
+            "streams": [
               {
-                \"stream\": {
-                  \"job\": \"test-manual\"
+                "stream": {
+                  "job": "test-manual"
                 },
-                \"values\": [
-                  [ \"$TIMESTAMP\", \"mensaje de prueba desde github actions\" ]
+                "values": [
+                  ["'"$TIMESTAMP"'", "mensaje de prueba desde github actions"]
                 ]
               }
             ]
-          }"
-
-      # 📡 Enviar logs reales
-      - name: 📡 Enviar logs a Grafana
-        if: always()
-        env:
-          GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
-        run: |
-          STATUS=${TESTS_FAILED:-false}
-          TIMESTAMP=$(date +%s%N)
-
-          echo "Estado de tests: $STATUS"
-
-          curl -X POST "https://logs-prod-us-east-3.grafana.net/loki/api/v1/push" \
-          -H "Authorization: Basic $GRAFANA_TOKEN" \
-          -H "Content-Type: application/json" \
-          -d "{
-            \"streams\": [
-              {
-                \"stream\": {
-                  \"job\": \"serenity-tests\",
-                  \"project\": \"orangehrm\",
-                  \"branch\": \"${{ github.ref_name }}\"
-                },
-                \"values\": [
-                  [ \"$TIMESTAMP\", \"Serenity execution finished | status=$STATUS | commit=${{ github.sha }}\" ]
-                ]
-              }
-            ]
-          }"
+          }'
