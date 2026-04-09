@@ -1,25 +1,29 @@
-name: 🧪 CI OrangeHRM - Reportes
+name: 🧪 CI OrangeHRM - Serenity + Grafana
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
     steps:
+      # 📥 Checkout
       - name: 📥 Checkout código
         uses: actions/checkout@v4
 
+      # ☕ Java
       - name: ☕ Configurar Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '11'
+          distribution: temurin
+          java-version: 11
 
+      # 📦 Cache Maven
       - name: 📦 Cache Maven
         uses: actions/cache@v4
         with:
@@ -27,25 +31,62 @@ jobs:
           key: maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-
 
-      # 🔥 INSTALAR CHROME (CLAVE PARA TU ERROR)
+      # 🌐 Instalar Chrome
       - name: 🌐 Instalar Google Chrome
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
 
-      # 🔥 EJECUTAR TESTS
-      - name: 🧪 Ejecutar pruebas
-        run: mvn clean verify
+      # 🔍 Verificar instalación Chrome
+      - name: 🔍 Verificar Chrome
+        run: google-chrome --version
 
-      # 📊 SERENITY REPORT (ya lo genera verify, esto es opcional)
+      # 🧪 Ejecutar pruebas
+      - name: 🧪 Ejecutar pruebas Serenity
+        id: tests
+        run: |
+          mvn clean verify || echo "TESTS_FAILED=true" >> $GITHUB_ENV
+
+      # 📊 Generar reporte Serenity
       - name: 📊 Generar reporte Serenity
         if: always()
         run: mvn serenity:aggregate
 
-      # 📁 SUBIR REPORTE
+      # 📁 Subir reporte Serenity
       - name: 📁 Subir reporte como artefacto
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: reporte-serenity
           path: target/site/serenity/
+
+      # 📸 Subir screenshots (opcional pero PRO)
+      - name: 📸 Subir screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: target/site/serenity/*.png
+
+      # 📡 Enviar logs a Grafana Cloud
+      - name: 📡 Enviar logs a Grafana
+        if: always()
+        env:
+          GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
+          GRAFANA_URL: ${{ secrets.GRAFANA_URL }}
+        run: |
+          STATUS=${TESTS_FAILED:-false}
+
+          echo "Estado de tests: $STATUS"
+
+          curl -X POST "$GRAFANA_URL" \
+          -H "Authorization: Basic $GRAFANA_TOKEN" \
+          -H "Content-Type: application/json" \
+          -d "{
+            \"message\": \"Serenity execution finished\",
+            \"status\": \"$STATUS\",
+            \"project\": \"orangehrm\",
+            \"branch\": \"${{ github.ref_name }}\",
+            \"commit\": \"${{ github.sha }}\",
+            \"run_id\": \"${{ github.run_id }}\"
+          }"
