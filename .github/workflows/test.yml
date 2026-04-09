@@ -37,7 +37,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
 
-      # 🔍 Verificar instalación Chrome
+      # 🔍 Verificar Chrome
       - name: 🔍 Verificar Chrome
         run: google-chrome --version
 
@@ -52,7 +52,7 @@ jobs:
         if: always()
         run: mvn serenity:aggregate
 
-      # 📁 Subir reporte Serenity
+      # 📁 Subir reporte
       - name: 📁 Subir reporte como artefacto
         if: always()
         uses: actions/upload-artifact@v4
@@ -60,7 +60,7 @@ jobs:
           name: reporte-serenity
           path: target/site/serenity/
 
-      # 📸 Subir screenshots (opcional pero PRO)
+      # 📸 Subir screenshots
       - name: 📸 Subir screenshots
         if: always()
         uses: actions/upload-artifact@v4
@@ -68,25 +68,31 @@ jobs:
           name: screenshots
           path: target/site/serenity/*.png
 
-      # 📡 Enviar logs a Grafana Cloud
-      - name: 📡 Enviar logs a Grafana
+      # 🔥 ENVIAR LOGS A GRAFANA (CORREGIDO)
+      - name: 📡 Enviar logs a Grafana Loki
         if: always()
         env:
           GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
-          GRAFANA_URL: ${{ secrets.GRAFANA_URL }}
         run: |
           STATUS=${TESTS_FAILED:-false}
+          TIMESTAMP=$(date +%s%N)
 
           echo "Estado de tests: $STATUS"
 
-          curl -X POST "$GRAFANA_URL" \
+          curl -X POST "https://logs-prod-us-east-3.grafana.net/loki/api/v1/push" \
           -H "Authorization: Basic $GRAFANA_TOKEN" \
           -H "Content-Type: application/json" \
           -d "{
-            \"message\": \"Serenity execution finished\",
-            \"status\": \"$STATUS\",
-            \"project\": \"orangehrm\",
-            \"branch\": \"${{ github.ref_name }}\",
-            \"commit\": \"${{ github.sha }}\",
-            \"run_id\": \"${{ github.run_id }}\"
+            \"streams\": [
+              {
+                \"stream\": {
+                  \"job\": \"serenity-tests\",
+                  \"project\": \"orangehrm\",
+                  \"branch\": \"${{ github.ref_name }}\"
+                },
+                \"values\": [
+                  [ \"$TIMESTAMP\", \"Serenity execution finished | status=$STATUS | commit=${{ github.sha }}\" ]
+                ]
+              }
+            ]
           }"
