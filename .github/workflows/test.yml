@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
 
       - name: 📦 Cache Maven
         uses: actions/cache@v4
@@ -27,13 +27,24 @@ jobs:
           key: maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: maven-
 
+      # 🔥 INSTALAR CHROME (CLAVE PARA TU ERROR)
+      - name: 🌐 Instalar Google Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
+      # 🔥 EJECUTAR TESTS
       - name: 🧪 Ejecutar pruebas
         run: mvn clean verify
 
+      # 📊 SERENITY REPORT (ya lo genera verify, esto es opcional)
       - name: 📊 Generar reporte Serenity
+        if: always()
         run: mvn serenity:aggregate
 
+      # 📁 SUBIR REPORTE
       - name: 📁 Subir reporte como artefacto
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: reporte-serenity
