@@ -47,9 +47,30 @@ jobs:
         id: tests
         run: |
           set +e
+
+          echo "⏱️ Iniciando medición..."
+          START_TIME=$(date +%s)
+
           mvn clean verify
           EXIT_CODE=$?
-          
+
+          END_TIME=$(date +%s)
+          DURATION=$((END_TIME - START_TIME))
+
+          echo "⏱️ Duración total: $DURATION segundos"
+
+          # Contar resultados desde reportes JUnit
+          PASSED=$(grep -o 'tests="[0-9]*"' target/surefire-reports/*.xml | awk -F'"' '{sum+=$2} END {print sum}')
+          FAILED=$(grep -o 'failures="[0-9]*"' target/surefire-reports/*.xml | awk -F'"' '{sum+=$2} END {print sum}')
+
+          echo "✅ Passed: $PASSED"
+          echo "❌ Failed: $FAILED"
+
+          # Guardar variables
+          echo "TEST_PASSED=$PASSED" >> $GITHUB_ENV
+          echo "TEST_FAILED=$FAILED" >> $GITHUB_ENV
+          echo "TEST_DURATION=$DURATION" >> $GITHUB_ENV
+
           if [ $EXIT_CODE -ne 0 ]; then
             echo "TESTS_FAILED=true" >> $GITHUB_ENV
           else
@@ -79,29 +100,33 @@ jobs:
           name: screenshots
           path: target/site/serenity/
 
-      # 🧪 TEST GRAFANA (VALIDACIÓN SEGURA)
-      - name: 🧪 Test conexión Grafana
+      # 📡 GRAFANA (MEJORADO CON MÉTRICAS REALES)
+      - name: 📡 Enviar métricas a Grafana
         if: always()
         env:
           GRAFANA_URL: ${{ secrets.GRAFANA_URL }}
           GRAFANA_TOKEN: ${{ secrets.GRAFANA_TOKEN }}
         run: |
-          echo "Probando conexión a Grafana..."
+          echo "📡 Enviando métricas a Grafana..."
 
           TIMESTAMP=$(date +%s%N)
 
-          curl -v -X POST "$GRAFANA_URL" \
+          LOG="test_passed=${TEST_PASSED} test_failed=${TEST_FAILED} duration=${TEST_DURATION}"
+
+          echo "Payload: $LOG"
+
+          curl -X POST "$GRAFANA_URL" \
           -H "Authorization: Basic $GRAFANA_TOKEN" \
           -H "Content-Type: application/json" \
-          -d '{
-            "streams": [
+          -d "{
+            \"streams\": [
               {
-                "stream": {
-                  "job": "test-manual"
+                \"stream\": {
+                  \"job\": \"serenity-tests\"
                 },
-                "values": [
-                  ["'"$TIMESTAMP"'", "mensaje de prueba desde github actions"]
+                \"values\": [
+                  [\"$TIMESTAMP\", \"$LOG\"]
                 ]
               }
             ]
-          }'
+          }"
