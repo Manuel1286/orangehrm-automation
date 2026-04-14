@@ -27,6 +27,7 @@ jobs:
       - name: Build + Test
         run: mvn clean verify
 
+
       - name: SonarCloud Scan
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
