@@ -1,4 +1,4 @@
-name: 🧪 CI OrangeHRM - Serenity + Grafana
+name: CI-Serenity
 
 on:
   push:
