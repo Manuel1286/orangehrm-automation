@@ -10,6 +10,7 @@ on:
     types:
       - completed
 
+
 jobs:
   sonar:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
